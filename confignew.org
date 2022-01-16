@@ -1,0 +1,153 @@
+* UI
+#+BEGIN_SRC emacs-lisp
+ (setq use-package-always-ensure t)
+ (global-display-line-numbers-mode)
+
+ (setq display-time-default-load-average nil)
+;; (display-battery-mode 1)
+
+ (fset 'yes-or-no-p 'y-or-n-p)
+
+ (setq inhibit-startup-message t)
+
+ (tool-bar-mode -1)
+ (menu-bar-mode -1)
+ (scroll-bar-mode -1)
+ (winner-mode 1)
+#+END_SRC
+
+* Transparency
+  #+BEGIN_SRC emacs-lisp
+   (defun toggle-transparency ()
+     (interactive)
+     (let ((alpha (frame-parameter nil 'alpha)))
+	(set-frame-parameter
+	 nil 'alpha
+	 (if (eql (cond ((numberp alpha) alpha)
+			((numberp (cdr alpha)) (cdr alpha))
+			;; Also handle undocumented (<active> <inactive>) form.
+			((numberp (cadr alpha)) (cadr alpha)))
+		  100)
+	     '(85 . 50) '(100 . 100)))))
+   (global-set-key (kbd "C-c t") 'toggle-transparency)
+  #+END_SRC
+* Pairs
+    #+BEGIN_SRC emacs-lisp
+(electric-pair-mode)
+    #+END_SRC
+    
+* Cleanup
+  #+BEGIN_SRC emacs-lisp
+ (setq user-emacs-directory "~/.cache/emacs")
+
+ (use-package no-littering)
+ (setq auto-save-file-name-transforms
+	  `((".*" ,(no-littering-expand-var-file-name "auto-save/") t)))
+  #+END_SRC
+* Ido
+  #+BEGIN_SRC emacs-lisp
+    (ido-mode t)
+    (setq ido-everywhere            t
+	  ido-enable-prefix         nil
+	  ido-enable-flex-matching  t
+	  ido-auto-merge-work-directories-length nil
+	  ;;ido-use-filename-at-point t
+	  ido-max-prospects         10
+	  ido-create-new-buffer     'always
+	  ;; ido-use-virtual-buffers   t
+	  ;; ido-handle-duplicate-virtual-buffers 2
+	  ido-default-buffer-method 'selected-window
+	  ido-default-file-method   'selected-window)
+
+    (defun ido-my-keys ()
+      (define-key ido-completion-map (kbd "<up>")   'ido-prev-match)
+      (define-key ido-completion-map (kbd "<down>") 'ido-next-match))
+
+    (add-hook 'ido-setup-hook 'ido-my-keys)
+
+    (setq ido-ignore-buffers (list (rx (or (and bos  " ")
+					   (and bos
+						(or "*Completions*"
+						    "*Shell Command Output*"
+						    "*vc-diff*")
+						eos)))))
+
+    (add-hook 'ido-make-file-list-hook
+	      (lambda ()
+		(define-key ido-file-dir-completion-map (kbd "SPC") 'self-insert-command)))
+
+    (setq ido-decorations (quote ("\n-> " "" "\n " "\n ..." "[" "]" "
+      [No match]" " [Matched]" " [Not readable]" " [Too big]" "
+      [Confirm]")))
+    (defun ido-disable-line-truncation () (set (make-local-variable 'truncate-lines) nil))
+    (add-hook 'ido-minibuffer-setup-hook 'ido-disable-line-truncation)
+
+    (defun recentf-ido-find-file ()
+	"Find a recent file using Ido."
+	(interactive)
+	(let* ((file-assoc-list
+		(mapcar (lambda (x)
+			  (cons (file-name-nondirectory x)
+				x))
+			recentf-list))
+	       (filename-list
+		(remove-duplicates (mapcar #'car file-assoc-list)
+				   :test #'string=))
+	       (filename (ido-completing-read "Choose recent file: "
+					      filename-list
+					      nil
+					      t)))
+	  (when filename
+	    (find-file (cdr (assoc filename
+				   file-assoc-list))))))
+
+
+
+    (global-set-key
+     "\M-x"
+     (lambda ()
+       (interactive)
+       (call-interactively
+	(intern
+	 (ido-completing-read
+	  "M-x "
+	  (all-completions "" obarray 'commandp))))))
+  #+END_SRC
+* Modeline
+  #+BEGIN_SRC emacs-lisp
+ (setq mode-line-format
+          (list
+           ;; value of `mode-name'
+           "%m: "
+           ;; value of current buffer name
+           "buffer %b, "
+           ;; value of current line number
+           "line %l "
+           "-- user: "
+           ;; value of user
+           (getenv "USER")))
+  #+END_SRC
+* Autocomplete
+  #+BEGIN_SRC emacs-lisp
+    (use-package auto-complete
+      :ensure t)
+    (define-globalized-minor-mode real-global-auto-complete-mode
+      auto-complete-mode (lambda ()
+			   (if (not (minibufferp (current-buffer)))
+			     (auto-complete-mode 1))
+			   ))
+    (real-global-auto-complete-mode t)
+  #+END_SRC
+
+* Autoindent
+  #+BEGIN_SRC emacs-lisp
+    (defun set-newline-and-indent ()
+      (local-set-key (kbd "RET") 'newline-and-indent))
+    (add-hook 'lisp-mode-hook 'set-newline-and-indent)
+  #+END_SRC
+
+* buffer
+  #+BEGIN_SRC emacs-lisp
+    (global-set-key (kbd "C-x b") 'ibuffer)
+  #+END_SRC
+
