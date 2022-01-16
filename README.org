@@ -1,0 +1,3 @@
+* DEF Emacs
+
+  Idea started to use as much as default packages on GNU/Emacs  if you would like to contribute let me know :)
